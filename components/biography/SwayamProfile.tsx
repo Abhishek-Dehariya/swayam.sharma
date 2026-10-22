@@ -14,6 +14,7 @@ import {
   ExternalLink,
   GraduationCap,
   HandHeart,
+  HelpCircle,
   Home,
   Lightbulb,
   Mail,
@@ -42,6 +43,7 @@ import Gallery from "@/components/biography/Gallery";
 import {
   aboutParagraphs,
   contactInfo,
+  faqs,
   keyEvents,
   organizations,
   profileInfo,
@@ -58,6 +60,7 @@ const navItems = [
   { label: "Events", id: "events" },
   { label: "Gallery", id: "gallery" },
   { label: "Vision", id: "vision" },
+  { label: "FAQ", id: "faq" },
   { label: "Contact", id: "contact" },
 ];
 
@@ -201,12 +204,12 @@ function Section({
 const PORTRAIT_IMAGES = [
   {
     src: "/images/01.jpeg",
-    alt: "Portrait of Swayam Sharma",
+    alt: "Swayam Sharma — National Executive President of Rashtriya Vidyarthi Manch (RVM) in formal attire",
     position: "object-[center_28%]",
   },
   {
     src: "/images/02.jpeg",
-    alt: "Portrait of Swayam Sharma",
+    alt: "Swayam Sharma — Youth Leader and Social Worker during community felicitation",
     position: "object-[center_24%]",
   },
 ] as const;
@@ -935,6 +938,30 @@ export default function SwayamProfile() {
                       Hindi, Malwi
                     </p>
                   </div>
+                </div>
+              </Section>
+
+              <Section id="faq" title="Frequently Asked Questions">
+                <p className="max-w-3xl text-lg leading-8 text-foreground-muted">
+                  Quick answers to common questions about Swayam Sharma, his leadership in Rashtriya Vidyarthi Manch, and his public initiatives.
+                </p>
+                <div className="mt-8 space-y-4">
+                  {faqs.map((faq, idx) => (
+                    <div
+                      key={idx}
+                      className={`${cardBase} p-6 transition hover:border-accent/40`}
+                    >
+                      <h3 className="flex items-start gap-3 font-heading text-lg font-bold text-foreground">
+                        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-accent/10 text-accent">
+                          <HelpCircle className="h-4 w-4" />
+                        </span>
+                        <span className="pt-0.5">{faq.question}</span>
+                      </h3>
+                      <p className="mt-3 pl-10 text-base leading-7 text-foreground-muted">
+                        {faq.answer}
+                      </p>
+                    </div>
+                  ))}
                 </div>
               </Section>
 

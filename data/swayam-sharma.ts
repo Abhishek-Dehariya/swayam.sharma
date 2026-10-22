@@ -46,11 +46,70 @@ export const siteUrl = "https://swayam-sharma.vercel.app";
 /** Absolute production URL of the shared social image. */
 export const siteImageUrl = `${siteUrl}/images/01.jpeg`;
 
+/** Absolute production URL of the branded OpenGraph / Twitter share image (1200x630). */
+export const siteOgImageUrl = `${siteUrl}/images/og-image.png`;
+
 export const siteTitle =
   "Swayam Sharma | Youth Leader, Social Worker & Public Speaker";
 
 export const siteDescription =
-  "Learn about Swayam Sharma, youth leader, social worker and public speaker based in Indore, Madhya Pradesh. Explore his organizational responsibilities, education, career progression and public events.";
+  "Official website of Swayam Sharma, Indian youth leader, social worker, and public speaker based in Indore, Madhya Pradesh. National Executive President of Rashtriya Vidyarthi Manch (RVM) under Mission New India. Discover his biographical background, initiatives, public speeches, and contact details.";
+
+export const siteKeywords = [
+  "Swayam Sharma",
+  "Swayam Sharma Indore",
+  "स्वयं शर्मा",
+  "Rashtriya Vidyarthi Manch",
+  "RVM National President",
+  "Rashtriya Karyakari Adhyaksh",
+  "Mission New India",
+  "Mission New India Indore",
+  "Youth Leader Madhya Pradesh",
+  "Social Worker Indore",
+  "Public Speaker Indore",
+  "Virat Hindu Sammelan Indore",
+  "Akhil Bhartiya Pratinidhi Sabha Visakhapatnam",
+  "Dussehra Mahotsav Indore",
+  "Soyat Kalan Agar Malwa",
+  "BNYS Doctor Indore",
+  "DRSU Jodhpur Ayurved University",
+  "Youth Empowerment India",
+  "Student Leadership India",
+  "Indian Youth Icon",
+];
+
+export type FAQItem = {
+  question: string;
+  answer: string;
+};
+
+export const faqs: FAQItem[] = [
+  {
+    question: "Who is Swayam Sharma?",
+    answer:
+      "Swayam Sharma is an Indian youth leader, social worker, and public speaker based in Indore, Madhya Pradesh. He currently serves as the National Executive President (Rashtriya Karyakari Adhyaksh) of Rashtriya Vidyarthi Manch (RVM) and Organisation Coordinator in Mission New India.",
+  },
+  {
+    question: "What is Rashtriya Vidyarthi Manch (RVM)?",
+    answer:
+      "Rashtriya Vidyarthi Manch (RVM) is a premier national student and youth organization operating under Mission New India. It coordinates youth participation in social welfare, character building, academic empowerment, and community development across India.",
+  },
+  {
+    question: "What is Swayam Sharma's educational background?",
+    answer:
+      "Swayam Sharma completed his schooling at Gaurav Vaibhav School (2020) and is pursuing a Bachelor of Naturopathy and Yogic Sciences (BNYS) from Dr. Sarvepalli Radhakrishnan Rajasthan Ayurved University (DRSU) in Jodhpur, Rajasthan.",
+  },
+  {
+    question: "What are some notable public events led by Swayam Sharma?",
+    answer:
+      "Key events include organizing the Virat Hindu Sammelan in Indore (January 2026), addressing the Akhil Bhartiya Pratinidhi Sabha panel in Visakhapatnam (August 2026), and active felicitation and leadership at the Dussehra Mahotsav and youth mobilization drives.",
+  },
+  {
+    question: "How can I contact Swayam Sharma or his office?",
+    answer:
+      "You can connect with Swayam Sharma's office at Shri Aurobindo Hospital Campus, Indore, Madhya Pradesh 453555. Phone: +91 97137 48719, Email: swayamsharmaoffice@gmail.com, or through his official social media profiles on Instagram, X, Facebook, and YouTube.",
+  },
+];
 
 export const profileInfo: ProfileInfo[] = [
   { label: "Name", value: "Swayam Sharma" },
@@ -90,6 +149,7 @@ export const tocItems: TocItem[] = [
   { id: "vision", label: "Vision" },
   { id: "core-values", label: "Core Values" },
   { id: "personal-life", label: "Personal Life" },
+  { id: "faq", label: "FAQ" },
   { id: "contact", label: "Contact" },
   { id: "social-media", label: "Social Media" },
 ];
