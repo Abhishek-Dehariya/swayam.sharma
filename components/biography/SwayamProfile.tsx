@@ -2,9 +2,12 @@
 
 import Image from "next/image";
 import {
+  ArrowRight,
   ArrowUp,
   AtSign,
+  Award,
   BriefcaseBusiness,
+  CalendarDays,
   Camera,
   CheckCircle2,
   ChevronDown,
@@ -18,6 +21,7 @@ import {
   Menu,
   MessageCircle,
   Network,
+  Phone,
   PlayCircle,
   Share2,
   ShieldCheck,
@@ -27,8 +31,17 @@ import {
   X,
 } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
-import { useEffect, useMemo, useState } from "react";
-import { profileInfo, socialLinks, tocItems } from "@/data/swayam-sharma";
+import { useEffect, useMemo, useRef, useState } from "react";
+import Gallery from "@/components/biography/Gallery";
+import {
+  aboutParagraphs,
+  contactInfo,
+  keyEvents,
+  organizations,
+  profileInfo,
+  socialLinks,
+  tocItems,
+} from "@/data/swayam-sharma";
 
 const navItems = [
   { label: "Home", id: "top" },
@@ -36,8 +49,10 @@ const navItems = [
   { label: "Biography", id: "biography" },
   { label: "Education", id: "education" },
   { label: "Career", id: "career" },
+  { label: "Events", id: "events" },
+  { label: "Gallery", id: "gallery" },
   { label: "Vision", id: "vision" },
-  { label: "Contact", id: "social-media" },
+  { label: "Contact", id: "contact" },
 ];
 
 const responsibilities = [
@@ -50,7 +65,7 @@ const responsibilities = [
   {
     title: "Community Development",
     description:
-      "Community-oriented activities and awareness initiatives described in the supplied profile.",
+      "Community-oriented activities and awareness initiatives across different fields.",
     icon: HandHeart,
   },
   {
@@ -63,6 +78,24 @@ const responsibilities = [
     description:
       "Promoting practical thinking, responsible participation, and a focus on real issues.",
     icon: Lightbulb,
+  },
+];
+
+const educationEntries = [
+  {
+    title: "Bachelor of Naturopathy and Yogic Sciences (BNYS)",
+    status: "Pursuing",
+    institution:
+      "Dr. Sarvepalli Radhakrishnan Rajasthan Ayurved University (DRSU)",
+    location: "Jodhpur, Rajasthan",
+    icon: GraduationCap,
+  },
+  {
+    title: "Gaurav Vaibhav School",
+    status: "Completed (2020)",
+    institution: "Gaurav Vaibhav School",
+    location: "Madhya Pradesh",
+    icon: Home,
   },
 ];
 
@@ -80,6 +113,21 @@ const socialIcon = {
   YouTube: PlayCircle,
   X,
 };
+
+/**
+ * Shared surface classes so every card in the page speaks the same visual
+ * language. Tokens come from `app/globals.css` — no raw hex values.
+ */
+const cardBase =
+  "rounded-card border border-border bg-surface shadow-card transition duration-300 hover:-translate-y-1 hover:shadow-lift";
+
+/** Icon plate used at the top of feature cards. */
+const iconPlate =
+  "flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-accent/10 text-accent";
+
+/** Small uppercase pill used for roles, statuses and categories. */
+const pill =
+  "inline-flex w-fit rounded-full px-3 py-1 text-[0.68rem] font-extrabold uppercase tracking-[0.12em]";
 
 function scrollToId(id: string, reduceMotion?: boolean) {
   const element = id === "top" ? document.body : document.getElementById(id);
@@ -125,16 +173,21 @@ function Section({
       viewport={{ once: true, amount: 0.18 }}
       variants={sectionVariants(reduceMotion)}
     >
-      {eyebrow ? (
-        <p className="mb-3 text-xs font-bold uppercase tracking-[0.18em] text-[#16835B]">
-          {eyebrow}
-        </p>
-      ) : null}
-      <div className="mb-7 h-1 w-14 rounded-full bg-[#D97706]" />
-      <h2 className="font-heading text-3xl font-bold leading-tight text-[#152536] sm:text-4xl">
-        {title}
-      </h2>
-      <div className="mt-6">{children}</div>
+      <header className="relative">
+        {eyebrow ? (
+          <p className="text-[0.7rem] font-extrabold uppercase tracking-[0.2em] text-accent">
+            {eyebrow}
+          </p>
+        ) : null}
+        <div
+          aria-hidden="true"
+          className="mt-3 h-1 w-14 rounded-full rule-gradient"
+        />
+        <h2 className="mt-4 font-heading text-3xl font-extrabold leading-[1.08] tracking-[-0.01em] text-foreground sm:text-4xl lg:text-[2.6rem]">
+          {title}
+        </h2>
+      </header>
+      <div className="mt-6 sm:mt-7">{children}</div>
     </motion.section>
   );
 }
@@ -145,9 +198,55 @@ export default function SwayamProfile() {
   const [activeId, setActiveId] = useState("overview");
   const [showTop, setShowTop] = useState(false);
   const [shareStatus, setShareStatus] = useState("");
+  /** Ref to the mobile menu trigger so focus can be restored on close. */
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
+  /** Ref to the mobile menu panel so focus can move into it when opened. */
+  const menuPanelRef = useRef<HTMLDivElement>(null);
+
+  // Escape closes the mobile menu and returns focus to its trigger.
+  useEffect(() => {
+    if (!menuOpen) return;
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      setMenuOpen(false);
+      menuButtonRef.current?.focus();
+    };
+
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [menuOpen]);
+
+  // Move focus into the panel when it opens, and back to the trigger on close.
+  const wasMenuOpen = useRef(false);
+  useEffect(() => {
+    if (menuOpen) {
+      wasMenuOpen.current = true;
+      menuPanelRef.current?.querySelector<HTMLButtonElement>("button")?.focus();
+      return;
+    }
+    // Only restore focus if the menu was actually open — never on first mount.
+    if (wasMenuOpen.current) {
+      wasMenuOpen.current = false;
+      menuButtonRef.current?.focus();
+    }
+  }, [menuOpen]);
 
   const observedIds = useMemo(
-    () => ["overview", "early-life", "education", "career", "responsibilities", "vision", "core-values", "personal-life", "social-media"],
+    () => [
+      "overview",
+      "early-life",
+      "education",
+      "career",
+      "events",
+      "gallery",
+      "responsibilities",
+      "vision",
+      "core-values",
+      "personal-life",
+      "contact",
+      "social-media",
+    ],
     [],
   );
 
@@ -187,7 +286,7 @@ export default function SwayamProfile() {
     if (navigator.share) {
       try {
         await navigator.share({
-          title: "Swayam Sharma Public Profile",
+          title: "Swayam Sharma | Youth Leader, Social Worker & Public Speaker",
           text: "Public profile and biography of Swayam Sharma.",
           url,
         });
@@ -212,55 +311,77 @@ export default function SwayamProfile() {
   };
 
   return (
-    <div id="top" className="min-h-screen bg-[#F7F8FA] text-[#152536]">
-      <header className="sticky top-0 z-50 border-b border-[#E2E8F0]/80 bg-white/88 shadow-sm shadow-slate-900/[0.03] backdrop-blur-xl">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
+    <div id="top" className="min-h-screen bg-background text-foreground">
+      <a
+        href="#biography"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-60 focus:rounded-full focus:bg-foreground focus:px-5 focus:py-2.5 focus:text-sm focus:font-bold focus:text-white"
+      >
+        Skip to biography
+      </a>
+      <header className="sticky top-0 z-50 border-b border-border/70 bg-surface/85 shadow-header backdrop-blur-xl">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
           <button
             type="button"
-            className="group text-left focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#D97706]"
+            className="group flex items-center gap-3 rounded-2xl text-left focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
             onClick={() => scrollToId("top", reduceMotion)}
             aria-label="Go to top"
           >
-            <span className="block font-heading text-base font-extrabold leading-none text-[#152536]">
-              SWAYAM SHARMA
+            <span
+              aria-hidden="true"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-foreground font-heading text-sm font-extrabold leading-none text-white transition group-hover:bg-accent"
+            >
+              SS
             </span>
-            <span className="mt-1 block text-[0.63rem] font-bold uppercase tracking-[0.22em] text-[#64748B] transition group-hover:text-[#D97706]">
-              Public Profile
+            <span className="min-w-0">
+              <span className="block truncate font-heading text-base font-extrabold leading-none text-foreground">
+                SWAYAM SHARMA
+              </span>
+              <span className="mt-1 block text-[0.63rem] font-bold uppercase tracking-[0.22em] text-foreground-muted transition group-hover:text-accent">
+                Public Profile
+              </span>
             </span>
           </button>
 
-          <nav className="hidden items-center gap-1 lg:flex" aria-label="Primary navigation">
-            {navItems.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => scrollToId(item.id, reduceMotion)}
-                className={`rounded-full px-3.5 py-2 text-sm font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D97706] ${
-                  activeId === item.id || (item.id === "biography" && activeId === "early-life")
-                    ? "bg-[#D97706] text-white shadow-sm shadow-[#D97706]/25"
-                    : "text-[#64748B] hover:bg-[#F7F8FA] hover:text-[#152536]"
-                }`}
-              >
-                {item.label}
-              </button>
-            ))}
+          <nav className="hidden items-center gap-0.5 lg:flex" aria-label="Primary navigation">
+            {navItems.map((item) => {
+              const isActive =
+                activeId === item.id ||
+                (item.id === "biography" && activeId === "early-life");
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => scrollToId(item.id, reduceMotion)}
+                  aria-current={isActive ? "true" : undefined}
+                  className={`relative flex min-h-11 items-center rounded-full px-2.5 py-2 text-sm font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent xl:px-3.5 ${
+                    isActive
+                      ? "bg-accent text-white shadow-sm shadow-accent/25"
+                      : "text-foreground-muted hover:bg-background hover:text-foreground"
+                  }`}
+                >
+                  {item.label}
+                </button>
+              );
+            })}
           </nav>
 
-          <div className="flex items-center gap-2">
+          <div className="flex shrink-0 items-center gap-2">
             <button
               type="button"
-              onClick={() => scrollToId("social-media", reduceMotion)}
-              className="hidden min-h-11 items-center gap-2 rounded-full bg-[#152536] px-4 text-sm font-bold text-white transition hover:bg-[#24384D] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D97706] sm:inline-flex"
+              onClick={() => scrollToId("contact", reduceMotion)}
+              className="hidden min-h-11 items-center gap-2 rounded-full bg-foreground px-4 text-sm font-bold text-white transition hover:bg-foreground-soft focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:inline-flex"
             >
               <Mail className="h-4 w-4" />
               Connect
             </button>
             <button
+              ref={menuButtonRef}
               type="button"
               onClick={() => setMenuOpen((value) => !value)}
-              className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-[#E2E8F0] bg-white text-[#152536] transition hover:border-[#D97706] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D97706] lg:hidden"
+              className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-border bg-surface text-foreground transition hover:border-accent hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent lg:hidden"
               aria-label="Toggle menu"
               aria-expanded={menuOpen}
+              aria-controls="mobile-navigation"
             >
               {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </button>
@@ -268,87 +389,105 @@ export default function SwayamProfile() {
         </div>
 
         {menuOpen ? (
-          <div className="border-t border-[#E2E8F0] bg-white px-5 py-3 lg:hidden">
-            <div className="mx-auto grid max-w-7xl gap-1">
-              {navItems.map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => {
-                    setMenuOpen(false);
-                    scrollToId(item.id, reduceMotion);
-                  }}
-                  className="min-h-11 rounded-xl px-3 text-left text-sm font-bold text-[#152536] transition hover:bg-[#F7F8FA] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D97706]"
-                >
-                  {item.label}
-                </button>
-              ))}
-            </div>
+          <div
+            id="mobile-navigation"
+            ref={menuPanelRef}
+            className="border-t border-border bg-surface px-5 py-3 lg:hidden"
+          >
+            <nav className="mx-auto grid max-w-7xl gap-1" aria-label="Mobile navigation">
+              {navItems.map((item) => {
+                const isActive =
+                  activeId === item.id ||
+                  (item.id === "biography" && activeId === "early-life");
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => {
+                      setMenuOpen(false);
+                      scrollToId(item.id, reduceMotion);
+                    }}
+                    aria-current={isActive ? "true" : undefined}
+                    className={`flex min-h-11 items-center justify-between rounded-xl px-3 text-left text-sm font-bold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
+                      isActive
+                        ? "bg-accent/10 text-accent-ink"
+                        : "text-foreground hover:bg-background"
+                    }`}
+                  >
+                    {item.label}
+                    {isActive ? (
+                      <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-accent" />
+                    ) : null}
+                  </button>
+                );
+              })}
+            </nav>
           </div>
         ) : null}
       </header>
 
       <main>
-        <section className="relative overflow-hidden border-b border-[#E2E8F0] bg-[linear-gradient(135deg,#F7F8FA_0%,#FFFFFF_46%,#EEF7F2_100%)]">
+        <section className="relative overflow-hidden border-b border-border hero-wash">
           <motion.div
             aria-hidden="true"
-            className="absolute inset-x-0 top-0 h-1 bg-[linear-gradient(90deg,#16835B,#D97706,#152536)]"
+            className="absolute inset-x-0 top-0 h-1 rule-gradient"
             initial={{ scaleX: 0, transformOrigin: "left" }}
             animate={{ scaleX: 1 }}
             transition={{ duration: reduceMotion ? 0 : 0.9 }}
           />
           <div
             aria-hidden="true"
-            className="absolute inset-0 opacity-[0.055] [background-image:linear-gradient(#152536_1px,transparent_1px),linear-gradient(90deg,#152536_1px,transparent_1px)] [background-size:54px_54px]"
+            className="paper-grid absolute inset-0"
           />
-          <div className="relative mx-auto grid min-h-[calc(100svh-72px)] max-w-7xl items-center gap-10 px-4 py-10 sm:px-6 sm:py-14 lg:grid-cols-[0.98fr_1.02fr] lg:px-8 lg:py-16">
+          <div className="relative mx-auto grid min-h-[calc(100svh-72px)] max-w-7xl items-center gap-10 px-4 py-10 sm:px-6 sm:py-14 lg:grid-cols-[1.05fr_0.95fr] lg:gap-12 lg:px-8 lg:py-16">
             <motion.div
               initial="hidden"
               animate="visible"
               transition={{ staggerChildren: reduceMotion ? 0 : 0.1, duration: 0.55 }}
               className="max-w-3xl"
             >
-              <motion.p variants={heroChild} className="inline-flex items-center gap-2 rounded-full border border-[#16835B]/20 bg-white/80 px-3 py-1.5 text-xs font-extrabold uppercase tracking-[0.2em] text-[#16835B] shadow-sm">
+              <motion.p variants={heroChild} className="inline-flex items-center gap-2 rounded-full border border-accent/20 bg-surface/85 px-3.5 py-1.5 text-[0.68rem] font-extrabold uppercase tracking-[0.2em] text-accent shadow-sm backdrop-blur">
                 <Sparkles className="h-3.5 w-3.5" />
                 Public Profile
               </motion.p>
-              <motion.h1 variants={heroChild} className="mt-5 max-w-3xl font-heading text-5xl font-extrabold leading-[0.98] text-[#152536] sm:text-6xl lg:text-7xl xl:text-8xl">
+              <motion.h1 variants={heroChild} className="mt-6 max-w-3xl font-heading text-[clamp(2.75rem,9vw,5.5rem)] font-extrabold leading-[0.94] tracking-[-0.02em] text-foreground">
                 Swayam Sharma
               </motion.h1>
-              <motion.p variants={heroChild} className="mt-5 max-w-2xl text-xl font-extrabold leading-8 text-[#24384D] sm:text-2xl">
-                Youth Leader. Social Worker. Public Representative.
+              <motion.p variants={heroChild} className="mt-5 max-w-2xl font-heading text-lg font-bold leading-8 text-foreground-soft sm:text-2xl sm:leading-9">
+                Youth Leader. Social Worker. Public Speaker.
               </motion.p>
               <motion.div variants={heroChild} className="mt-7 lg:hidden">
                 <PortraitCard reduceMotion={reduceMotion} compact />
               </motion.div>
-              <motion.p variants={heroChild} className="mt-6 max-w-2xl text-base leading-8 text-[#64748B] sm:text-lg">
-                Swayam Sharma is an Indian youth leader, social worker, and public representative based in Indore, Madhya Pradesh. His supplied profile highlights involvement in grassroots development, youth mobilization, and public engagement initiatives, with an emphasis on practical problem-solving and responsible participation of young individuals in public life.
+              <motion.p variants={heroChild} className="mt-6 max-w-2xl text-base leading-8 text-foreground-muted sm:text-lg">
+                Swayam Sharma is an Indian youth leader, social worker and public speaker based in Indore, Madhya Pradesh. He serves as National Executive President (Rashtriya Karyakari Adhyaksh) of Rashtriya Vidyarthi Manch (RVM), which functions under Mission New India, and as Organisation Coordinator in Mission New India.
               </motion.p>
               <motion.div variants={heroChild} className="mt-6 flex flex-wrap gap-2.5">
                 {["Indore, Madhya Pradesh", "Youth Mobilization", "Grassroots Development"].map((item) => (
                   <span
                     key={item}
-                    className="rounded-full border border-[#E2E8F0] bg-white/78 px-3.5 py-2 text-xs font-extrabold uppercase tracking-[0.11em] text-[#475569] shadow-sm"
+                    className="rounded-full border border-border bg-surface/80 px-3.5 py-2 text-[0.68rem] font-extrabold uppercase tracking-[0.11em] text-foreground-muted shadow-sm backdrop-blur"
                   >
                     {item}
                   </span>
                 ))}
               </motion.div>
-              <motion.div variants={heroChild} className="mt-8 flex flex-col gap-3 sm:flex-row">
-                <button type="button" onClick={() => scrollToId("biography", reduceMotion)} className="inline-flex min-h-12 items-center justify-center rounded-full bg-[#D97706] px-6 text-sm font-extrabold text-white shadow-xl shadow-[#D97706]/25 transition hover:-translate-y-0.5 hover:bg-[#B75F05] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D97706]">
+              <motion.div variants={heroChild} className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+                <button type="button" onClick={() => scrollToId("biography", reduceMotion)} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-accent px-6 text-sm font-extrabold text-white shadow-xl shadow-accent/25 transition hover:-translate-y-0.5 hover:bg-accent-deep focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">
                   Explore Biography
+                  <ArrowRight className="h-4 w-4" />
                 </button>
-                <button type="button" onClick={() => scrollToId("social-media", reduceMotion)} className="inline-flex min-h-12 items-center justify-center rounded-full border border-[#CBD5E1] bg-white/90 px-6 text-sm font-extrabold text-[#152536] shadow-sm transition hover:-translate-y-0.5 hover:border-[#D97706] hover:text-[#9A4D03] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D97706]">
+                <button type="button" onClick={() => scrollToId("social-media", reduceMotion)} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full border border-border-strong bg-surface/90 px-6 text-sm font-extrabold text-foreground shadow-sm backdrop-blur transition hover:-translate-y-0.5 hover:border-accent hover:text-accent-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">
                   Connect on Social Media
                 </button>
               </motion.div>
-              <motion.div variants={heroChild} className="mt-7 flex flex-wrap items-center gap-4 text-sm font-semibold text-[#64748B]">
-                <span className="inline-flex items-center gap-2"><MapPin className="h-4 w-4 text-[#16835B]" />Based in Indore, Madhya Pradesh, India</span>
-                <button type="button" onClick={shareProfile} className="inline-flex min-h-10 items-center gap-2 rounded-full border border-[#E2E8F0] bg-white px-4 text-[#152536] transition hover:border-[#D97706] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D97706]">
+              <motion.div variants={heroChild} className="mt-7 flex flex-wrap items-center gap-x-4 gap-y-3 text-sm font-semibold text-foreground-muted">
+                <span className="inline-flex items-center gap-2"><MapPin className="h-4 w-4 text-accent" />Based in Indore, Madhya Pradesh, India</span>
+                <button type="button" onClick={shareProfile} className="inline-flex min-h-10 items-center gap-2 rounded-full border border-border bg-surface px-4 text-foreground transition hover:border-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">
                   <Share2 className="h-4 w-4" />
                   Share Profile
                 </button>
-                {shareStatus ? <span className="text-[#16835B]" role="status">{shareStatus}</span> : null}
+                {shareStatus ? <span className="text-accent" role="status">{shareStatus}</span> : null}
               </motion.div>
             </motion.div>
 
@@ -356,27 +495,34 @@ export default function SwayamProfile() {
               initial={{ opacity: reduceMotion ? 1 : 0, y: reduceMotion ? 0 : 28, scale: reduceMotion ? 1 : 0.96 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               transition={{ duration: reduceMotion ? 0 : 0.75 }}
-              className="mx-auto hidden w-full max-w-[430px] sm:max-w-[500px] lg:mr-0 lg:block lg:max-w-[530px]"
+              className="mx-auto hidden w-full max-w-[430px] sm:max-w-[500px] lg:mr-0 lg:block lg:max-w-[520px]"
             >
               <PortraitCard reduceMotion={reduceMotion} />
             </motion.div>
           </div>
         </section>
 
-        <section className="mx-auto max-w-7xl px-5 py-10 sm:px-6 lg:px-8">
-          <div className="rounded-[18px] border border-[#E2E8F0] bg-white shadow-sm">
-            <div className="border-b border-[#E2E8F0] px-5 py-5 sm:px-7">
-              <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-[#D97706]">
+        <section className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
+          <div className="overflow-hidden rounded-card border border-border bg-surface shadow-card">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border bg-surface-soft px-5 py-4 sm:px-7">
+              <p className="text-[0.7rem] font-extrabold uppercase tracking-[0.2em] text-accent-ink">
                 Profile Information
               </p>
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1 text-[0.65rem] font-extrabold uppercase tracking-[0.14em] text-foreground-muted">
+                <CheckCircle2 className="h-3.5 w-3.5 text-accent" />
+                Verified Public Record
+              </span>
             </div>
-            <dl className="grid md:grid-cols-2 xl:grid-cols-3">
+            <dl className="grid sm:grid-cols-2 xl:grid-cols-3">
               {profileInfo.map((item) => (
-                <div key={item.label} className="border-b border-[#E2E8F0] px-5 py-5 last:border-b-0 md:border-r md:last:border-b xl:[&:nth-child(3n)]:border-r-0">
-                  <dt className="text-[0.7rem] font-extrabold uppercase tracking-[0.16em] text-[#64748B]">
+                <div
+                  key={item.label}
+                  className="border-b border-border px-5 py-5 transition hover:bg-surface-soft/70 sm:px-6 xl:[&:nth-child(3n)]:border-r-0"
+                >
+                  <dt className="text-[0.68rem] font-extrabold uppercase tracking-[0.16em] text-foreground-muted">
                     {item.label}
                   </dt>
-                  <dd className="mt-2 text-base font-bold leading-7 text-[#152536]">
+                  <dd className="mt-2 text-base font-bold leading-7 text-foreground">
                     {item.value}
                   </dd>
                 </div>
@@ -386,41 +532,67 @@ export default function SwayamProfile() {
         </section>
 
         <div id="biography" className="scroll-mt-28">
-          <div className="mx-auto grid max-w-7xl gap-9 px-5 py-8 sm:px-6 lg:grid-cols-[280px_1fr] lg:px-8">
-            <aside className="lg:sticky lg:top-24 lg:h-[calc(100vh-7rem)]">
-              <details className="rounded-[18px] border border-[#E2E8F0] bg-white p-4 shadow-sm lg:hidden">
-                <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-extrabold text-[#152536]">
+          <div className="mx-auto grid max-w-7xl gap-8 px-4 py-8 sm:px-6 lg:grid-cols-[264px_1fr] lg:gap-10 lg:px-8">
+            <aside className="lg:sticky lg:top-24 lg:self-start">
+              <details className="rounded-card border border-border bg-surface p-4 shadow-card lg:hidden">
+                <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between rounded-xl px-1 text-sm font-extrabold text-foreground">
                   Contents
-                  <ChevronDown className="h-4 w-4" />
+                  <ChevronDown className="h-4 w-4 shrink-0" />
                 </summary>
                 <TocList activeId={activeId} reduceMotion={reduceMotion} />
               </details>
-              <div className="hidden rounded-[18px] border border-[#E2E8F0] bg-white p-4 shadow-sm lg:block">
-                <p className="px-3 pb-3 text-xs font-extrabold uppercase tracking-[0.18em] text-[#64748B]">
+              <nav
+                aria-label="On this page"
+                className="hidden rounded-card border border-border bg-surface p-4 shadow-card lg:block"
+              >
+                <p className="px-3 pb-3 text-[0.68rem] font-extrabold uppercase tracking-[0.2em] text-foreground-muted">
                   Contents
                 </p>
                 <TocList activeId={activeId} reduceMotion={reduceMotion} />
-              </div>
+              </nav>
             </aside>
 
-            <article className="space-y-20">
+            <article className="editorial">
               <Section id="overview" title="About Swayam Sharma">
-                <p className="max-w-3xl text-lg leading-8 text-[#475569]">
-                  Swayam Sharma is an Indian youth leader, social worker, and public representative based in Indore, Madhya Pradesh. His profile describes involvement in grassroots development, youth mobilization, and public engagement initiatives. His stated approach emphasizes practical problem-solving and responsible participation of young individuals in public life.
-                </p>
+                <div className="max-w-3xl space-y-5">
+                  {aboutParagraphs.map((paragraph, index) => (
+                    <p
+                      key={paragraph}
+                      className={`text-lg leading-8 text-foreground-muted ${
+                        index === 0
+                          ? "border-l-2 border-accent pl-5 font-medium text-foreground-soft"
+                          : ""
+                      }`}
+                    >
+                      {paragraph}
+                    </p>
+                  ))}
+                </div>
+                <div className="mt-8 flex flex-wrap gap-2.5">
+                  {["Indore, Madhya Pradesh", "Youth Mobilization", "Grassroots Development"].map((item) => (
+                    <span
+                      key={item}
+                      className="rounded-full border border-border bg-surface px-3.5 py-2 text-[0.68rem] font-extrabold uppercase tracking-[0.11em] text-foreground-muted shadow-sm"
+                    >
+                      {item}
+                    </span>
+                  ))}
+                </div>
               </Section>
 
               <Section id="early-life" title="Early Life">
-                <div className="grid gap-6 md:grid-cols-[1fr_280px]">
-                  <p className="text-lg leading-8 text-[#475569]">
-                    Swayam Sharma was born on 24 October 2001 in Soyat Kala, located in the Agar Malwa district of Madhya Pradesh. According to the supplied biography, an early interest in leadership and social responsibility influenced his interest in public service and youth development.
+                <div className="grid gap-6 md:grid-cols-[1fr_280px] md:items-start">
+                  <p className="text-lg leading-8 text-foreground-muted">
+                    Swayam Sharma was born on 24 October 2001 in Soyat Kala, located in the Agar Malwa district of Madhya Pradesh. An early interest in leadership and social responsibility shaped his interest in public service and youth development.
                   </p>
-                  <div className="rounded-[18px] border border-[#E2E8F0] bg-white p-6">
-                    <Home className="h-8 w-8 text-[#D97706]" />
-                    <p className="mt-5 text-sm font-extrabold uppercase tracking-[0.16em] text-[#64748B]">
+                  <div className={`${cardBase} p-6`}>
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-accent/10 text-accent">
+                      <Home className="h-6 w-6" />
+                    </div>
+                    <p className="mt-5 text-[0.68rem] font-extrabold uppercase tracking-[0.16em] text-foreground-muted">
                       Origin
                     </p>
-                    <p className="mt-2 text-lg font-bold leading-7 text-[#152536]">
+                    <p className="mt-2 text-lg font-bold leading-7 text-foreground">
                       Soyat Kala, Agar Malwa, Madhya Pradesh
                     </p>
                   </div>
@@ -428,72 +600,185 @@ export default function SwayamProfile() {
               </Section>
 
               <Section id="education" title="Education">
-                <div className="rounded-[18px] border border-[#E2E8F0] bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
-                  <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
-                    <div className="flex h-13 w-13 shrink-0 items-center justify-center rounded-2xl bg-[#16835B]/10 text-[#16835B]">
-                      <GraduationCap className="h-7 w-7" />
-                    </div>
-                    <div>
-                      <h3 className="font-heading text-2xl font-bold text-[#152536]">
-                        Bachelor of Naturopathy and Yogic Sciences (BNYS)
-                      </h3>
-                      <p className="mt-3 text-base font-bold text-[#475569]">
-                        DRSU
-                      </p>
-                      <p className="mt-1 text-sm font-semibold text-[#64748B]">
-                        Jodhpur, Rajasthan
-                      </p>
-                    </div>
-                  </div>
+                <div className="grid gap-5">
+                  {educationEntries.map((entry) => {
+                    const Icon = entry.icon;
+                    return (
+                      <div key={entry.title} className={`${cardBase} p-6`}>
+                        <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
+                          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-accent/10 text-accent">
+                            <Icon className="h-7 w-7" />
+                          </div>
+                          <div className="min-w-0">
+                            <div className="flex flex-wrap items-center gap-3">
+                              <h3 className="font-heading text-2xl font-bold text-foreground">
+                                {entry.title}
+                              </h3>
+                              <span className={`${pill} bg-accent/10 text-accent-ink`}>
+                                {entry.status}
+                              </span>
+                            </div>
+                            <p className="mt-3 text-base font-bold leading-7 text-foreground-muted">
+                              {entry.institution}
+                            </p>
+                            <p className="mt-1 text-sm font-semibold text-foreground-muted">
+                              {entry.location}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </Section>
 
               <Section id="career" title="Career and Organizational Responsibilities">
-                <p className="max-w-3xl text-lg leading-8 text-[#475569]">
-                  The supplied profile describes Swayam Sharma&apos;s involvement in youth-based initiatives, community-oriented work, social awareness programs, and leadership activities.
+                <p className="max-w-3xl text-lg leading-8 text-foreground-muted">
+                  Swayam Sharma holds two distinct roles: National Executive President (Rashtriya Karyakari Adhyaksh) of Rashtriya Vidyarthi Manch (RVM), which functions under Mission New India, and Organisation Coordinator in Mission New India.
                 </p>
                 <div className="mt-8 grid gap-5 md:grid-cols-2">
-                  {[
-                    {
-                      name: "Rashtriya Vidyarthi Manch",
-                      text: "The supplied profile describes responsibilities related to coordinating organizational activities, guiding youth participation, and supporting organizational development across different regions.",
-                    },
-                    {
-                      name: "Narendra Modi Vichar Manch (RVM)",
-                      text: "The supplied profile associates Swayam Sharma with organizational outreach, ideological awareness, coordination, and youth participation.",
-                    },
-                  ].map((org) => (
-                    <motion.div key={org.name} variants={sectionVariants(reduceMotion)} className="rounded-[18px] border border-[#E2E8F0] bg-white p-6 shadow-sm">
-                      <BriefcaseBusiness className="h-7 w-7 text-[#D97706]" />
-                      <h3 className="mt-5 font-heading text-2xl font-bold text-[#152536]">
+                  {organizations.map((org) => (
+                    <motion.div
+                      key={org.name}
+                      variants={sectionVariants(reduceMotion)}
+                      className={`${cardBase} flex flex-col p-6`}
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div className={iconPlate}>
+                          <BriefcaseBusiness className="h-6 w-6" />
+                        </div>
+                      </div>
+                      <h3 className="mt-5 font-heading text-2xl font-bold text-foreground">
                         {org.name}
                       </h3>
-                      <p className="mt-4 inline-flex rounded-full bg-[#16835B]/10 px-3 py-1 text-xs font-extrabold uppercase tracking-[0.12em] text-[#126B4B]">
-                        National Organization General Secretary
+                      <p className={`${pill} mt-4 bg-accent/10 text-accent-ink`}>
+                        {org.role}
                       </p>
-                      <p className="mt-5 leading-7 text-[#64748B]">{org.text}</p>
+                      <p className="mt-5 leading-7 text-foreground-muted">{org.description}</p>
+
+                      {org.steps.length > 0 ? (
+                        <div className="mt-7 border-t border-border pt-6">
+                          <p className="text-[0.68rem] font-extrabold uppercase tracking-[0.16em] text-foreground-muted">
+                            Career Progression
+                          </p>
+                          <ol className="mt-4 space-y-0">
+                            {org.steps.map((step, index) => (
+                              <li key={step.role} className="flex gap-4">
+                                <div className="flex flex-col items-center">
+                                  <span
+                                    aria-hidden="true"
+                                    className={`mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[0.68rem] font-extrabold ${
+                                      step.current
+                                        ? "bg-accent text-white"
+                                        : "bg-accent/12 text-accent-ink"
+                                    }`}
+                                  >
+                                    {index + 1}
+                                  </span>
+                                  {index < org.steps.length - 1 ? (
+                                    <span aria-hidden="true" className="w-px flex-1 bg-border" />
+                                  ) : null}
+                                </div>
+                                <div className="pb-6 last:pb-0">
+                                  <p
+                                    className={`text-base font-bold leading-6 ${
+                                      step.current ? "text-accent-ink" : "text-foreground"
+                                    }`}
+                                  >
+                                    {step.role}
+                                    {step.current ? (
+                                      <span className="ml-2 rounded-full bg-accent/10 px-2 py-0.5 text-[0.65rem] font-extrabold uppercase tracking-[0.12em] text-accent-ink">
+                                        Current
+                                      </span>
+                                    ) : null}
+                                  </p>
+                                  {step.period ? (
+                                    <p className="mt-1 text-sm font-semibold text-foreground-muted">
+                                      {step.period}
+                                    </p>
+                                  ) : (
+                                    <p className="mt-1 text-sm font-semibold text-foreground-faint">
+                                      Previous role
+                                    </p>
+                                  )}
+                                </div>
+                              </li>
+                            ))}
+                          </ol>
+                        </div>
+                      ) : null}
                     </motion.div>
                   ))}
                 </div>
-                <p className="mt-5 text-sm leading-6 text-[#64748B]">
-                  These organizational details are presented as supplied biography information and do not imply endorsement by Narendra Modi, the Government of India, or any public authority.
+              </Section>
+
+              <Section id="events" title="Key Events and Achievements">
+                <p className="max-w-3xl text-lg leading-8 text-foreground-muted">
+                  Public events and programmes in which Swayam Sharma has organised, spoken and participated.
                 </p>
+                <div className="mt-8 grid gap-5 sm:grid-cols-2">
+                  {keyEvents.map((event) => (
+                    <motion.article
+                      key={event.title}
+                      variants={sectionVariants(reduceMotion)}
+                      className={`${cardBase} flex flex-col p-6`}
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div className={iconPlate}>
+                          <Award className="h-6 w-6" />
+                        </div>
+                        <span className={`${pill} bg-accent/10 text-accent-ink`}>
+                          {event.role}
+                        </span>
+                      </div>
+                      <h3 className="mt-5 font-heading text-xl font-bold leading-snug text-foreground">
+                        {event.title}
+                      </h3>
+                      <p className="mt-3 text-sm leading-6 text-foreground-muted">{event.detail}</p>
+                      <dl className="mt-5 flex flex-col gap-2 border-t border-border pt-4 text-sm">
+                        {event.date ? (
+                          <div className="flex items-center gap-2 text-foreground-muted">
+                            <dt className="sr-only">Date</dt>
+                            <CalendarDays className="h-4 w-4 shrink-0 text-accent" aria-hidden="true" />
+                            <dd className="font-semibold">{event.date}</dd>
+                          </div>
+                        ) : null}
+                        {event.location ? (
+                          <div className="flex items-center gap-2 text-foreground-muted">
+                            <dt className="sr-only">Location</dt>
+                            <MapPin className="h-4 w-4 shrink-0 text-accent" aria-hidden="true" />
+                            <dd className="font-semibold">{event.location}</dd>
+                          </div>
+                        ) : null}
+                      </dl>
+                    </motion.article>
+                  ))}
+                </div>
+              </Section>
+
+              <Section id="gallery" title="Photo Gallery">
+                <p className="max-w-3xl text-lg leading-8 text-foreground-muted">
+                  Photographs from public events and felicitation programmes.
+                </p>
+                <Gallery />
               </Section>
 
               <Section id="responsibilities" title="Key Responsibilities and Work">
-                <p className="max-w-3xl text-lg leading-8 text-[#475569]">
-                  The supplied profile highlights youth leadership, public engagement, community-oriented activities, and solution-focused approaches to social participation.
+                <p className="max-w-3xl text-lg leading-8 text-foreground-muted">
+                  Swayam Sharma&apos;s work centres on youth leadership, public engagement, community-oriented activities, and solution-focused approaches to social participation.
                 </p>
                 <motion.div className="mt-8 grid gap-5 sm:grid-cols-2 xl:grid-cols-4" initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.2 }} transition={{ staggerChildren: reduceMotion ? 0 : 0.08 }}>
                   {responsibilities.map((item) => {
                     const Icon = item.icon;
                     return (
-                      <motion.div key={item.title} variants={sectionVariants(reduceMotion)} className="group rounded-[18px] border border-[#E2E8F0] bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
-                        <Icon className="h-7 w-7 text-[#16835B] transition group-hover:text-[#D97706]" />
-                        <h3 className="mt-5 font-heading text-xl font-bold text-[#152536]">
+                      <motion.div key={item.title} variants={sectionVariants(reduceMotion)} className={`${cardBase} group p-5`}>
+                        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-accent/10 text-accent">
+                          <Icon className="h-5 w-5" />
+                        </div>
+                        <h3 className="mt-5 font-heading text-xl font-bold text-foreground">
                           {item.title}
                         </h3>
-                        <p className="mt-3 text-sm leading-6 text-[#64748B]">
+                        <p className="mt-3 text-sm leading-6 text-foreground-muted">
                           {item.description}
                         </p>
                       </motion.div>
@@ -503,11 +788,22 @@ export default function SwayamProfile() {
               </Section>
 
               <Section id="vision" title="Vision">
-                <div className="rounded-[18px] border border-[#E2E8F0] bg-[#FFF8EE] p-7 sm:p-10">
-                  <div className="mb-6 h-1 w-20 rounded-full bg-[#D97706]" />
-                  <p className="font-heading text-3xl font-bold leading-tight text-[#152536] sm:text-4xl">
-                    &quot;To build a responsible, transparent, and youth-driven leadership system that focuses on real issues and long-term development.&quot;
-                  </p>
+                <div className="relative overflow-hidden rounded-card border border-accent/20 bg-accent-soft p-7 sm:p-10">
+                  <div
+                    aria-hidden="true"
+                    className="absolute -right-16 -top-16 h-48 w-48 rounded-full bg-accent/10 blur-2xl"
+                  />
+                  <div className="relative">
+                    <div className="mb-6 h-1 w-20 rounded-full rule-gradient" />
+                    <blockquote className="font-heading text-2xl font-bold leading-snug text-foreground sm:text-3xl sm:leading-tight">
+                      <p>
+                        &quot;To build a responsible, transparent, and youth-driven leadership system that focuses on real issues and long-term development.&quot;
+                      </p>
+                    </blockquote>
+                    <p className="mt-6 text-[0.7rem] font-extrabold uppercase tracking-[0.2em] text-accent-ink">
+                      Vision Statement
+                    </p>
+                  </div>
                 </div>
               </Section>
 
@@ -516,45 +812,133 @@ export default function SwayamProfile() {
                   {values.map((item) => {
                     const Icon = item.icon;
                     return (
-                      <div key={item.title} className="flex min-h-28 items-center gap-4 rounded-[18px] border border-[#E2E8F0] bg-white p-5">
-                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#D97706]/10 text-[#D97706]">
+                      <div key={item.title} className={`${cardBase} flex min-h-28 items-center gap-4 p-5`}>
+                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-accent/10 text-accent">
                           <Icon className="h-5 w-5" />
                         </div>
-                        <h3 className="font-heading text-xl font-bold text-[#152536]">
+                        <h3 className="font-heading text-xl font-bold text-foreground">
                           {item.title}
                         </h3>
                       </div>
                     );
                   })}
                 </div>
-                <p className="mt-5 text-sm leading-6 text-[#64748B]">
-                  These are values stated in the supplied profile, not a verified assessment of personal conduct.
+                <p className="mt-5 text-sm leading-6 text-foreground-muted">
+                  These values guide Swayam Sharma&apos;s work in youth leadership and public service.
                 </p>
               </Section>
 
               <Section id="personal-life" title="Personal Life">
-                <p className="max-w-3xl text-lg leading-8 text-[#475569]">
-                  The supplied profile identifies Indore, Madhya Pradesh, as Swayam Sharma&apos;s current city and describes his involvement in social and public initiatives.
+                <div className="grid gap-5 md:grid-cols-3">
+                  <div className={`${cardBase} p-6 md:col-span-2`}>
+                    <p className="text-lg leading-8 text-foreground-muted">
+                      Swayam Sharma is based in Indore, Madhya Pradesh, where he is involved in social and public initiatives. He speaks Hindi and Malwi, both fluently.
+                    </p>
+                  </div>
+                  <div className={`${cardBase} p-6`}>
+                    <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-accent/10 text-accent">
+                      <MapPin className="h-5 w-5" />
+                    </div>
+                    <p className="mt-5 text-[0.68rem] font-extrabold uppercase tracking-[0.16em] text-foreground-muted">
+                      Based in
+                    </p>
+                    <p className="mt-2 text-lg font-bold leading-7 text-foreground">
+                      Indore, Madhya Pradesh
+                    </p>
+                    <p className="mt-4 text-[0.68rem] font-extrabold uppercase tracking-[0.16em] text-foreground-muted">
+                      Languages
+                    </p>
+                    <p className="mt-2 text-sm font-semibold text-foreground-muted">
+                      Hindi, Malwi
+                    </p>
+                  </div>
+                </div>
+              </Section>
+
+              <Section id="contact" title="Contact">
+                <p className="max-w-3xl text-lg leading-8 text-foreground-muted">
+                  For speaking engagements, organisational coordination, media enquiries or general correspondence, reach out using the details below.
                 </p>
+                <div className="mt-8 grid gap-5 sm:grid-cols-2">
+                  <div className={`${cardBase} p-6`}>
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-accent/10 text-accent">
+                      <Phone className="h-6 w-6" />
+                    </div>
+                    <h3 className="mt-5 font-heading text-xl font-bold text-foreground">
+                      Mobile
+                    </h3>
+                    <p className="mt-3 text-base font-semibold text-foreground-muted">
+                      <a
+                        href={contactInfo.mobileHref}
+                        className="inline-flex min-h-11 items-center font-extrabold text-foreground underline decoration-accent decoration-2 underline-offset-4 transition hover:text-accent-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                      >
+                        {contactInfo.mobile}
+                      </a>
+                    </p>
+                  </div>
+
+                  <div className={`${cardBase} p-6`}>
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-accent/10 text-accent">
+                      <Mail className="h-6 w-6" />
+                    </div>
+                    <h3 className="mt-5 font-heading text-xl font-bold text-foreground">
+                      Email
+                    </h3>
+                    <p className="mt-3 text-base font-semibold text-foreground-muted">
+                      <a
+                        href={contactInfo.emailHref}
+                        className="inline-flex min-h-11 items-center break-words font-extrabold text-foreground underline decoration-accent decoration-2 underline-offset-4 transition hover:text-accent-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                      >
+                        {contactInfo.email}
+                      </a>
+                    </p>
+                  </div>
+
+                  <div className={`${cardBase} p-6 sm:col-span-2`}>
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-accent/10 text-accent">
+                      <MapPin className="h-6 w-6" />
+                    </div>
+                    <h3 className="mt-5 font-heading text-xl font-bold text-foreground">
+                      Address
+                    </h3>
+                    <address className="mt-3 not-italic text-base font-semibold leading-7 text-foreground-muted">
+                      {contactInfo.addressLine1}
+                      <br />
+                      {contactInfo.addressLine2}
+                    </address>
+                    <a
+                      href={contactInfo.mapsUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-4 inline-flex min-h-11 items-center gap-2 rounded-full border border-border-strong bg-surface px-4 text-sm font-extrabold text-foreground transition hover:border-accent hover:text-accent-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                    >
+                      <MapPin className="h-4 w-4" />
+                      View on Google Maps
+                      <ExternalLink className="h-4 w-4" />
+                    </a>
+                  </div>
+                </div>
               </Section>
 
               <Section id="social-media" title="Connect with Swayam Sharma">
-                <p className="max-w-3xl text-lg leading-8 text-[#475569]">
-                  Follow the supplied social media profiles for updates and public activities.
+                <p className="max-w-3xl text-lg leading-8 text-foreground-muted">
+                  Follow Swayam Sharma on social media for updates on his public activities, events and initiatives.
                 </p>
                 <div className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
                   {socialLinks.map((link) => {
                     const Icon = socialIcon[link.name];
                     return (
-                      <a key={link.name} href={link.href} target="_blank" rel="noopener noreferrer" aria-label={`Open ${link.name} profile for Swayam Sharma`} className="group rounded-[18px] border border-[#E2E8F0] bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:border-[#D97706] hover:shadow-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D97706]">
+                      <a key={link.name} href={link.href} target="_blank" rel="noopener noreferrer" aria-label={`Open ${link.name} profile for Swayam Sharma`} className={`${cardBase} group p-5 hover:border-accent`}>
                         <div className="flex items-center justify-between">
-                          <Icon className="h-6 w-6 text-[#152536] transition group-hover:text-[#D97706]" />
-                          <ExternalLink className="h-4 w-4 text-[#94A3B8]" />
+                          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-surface-soft text-foreground transition group-hover:bg-accent/10 group-hover:text-accent">
+                            <Icon className="h-5 w-5" />
+                          </div>
+                          <ExternalLink className="h-4 w-4 text-foreground-faint transition group-hover:text-accent" />
                         </div>
-                        <h3 className="mt-6 font-heading text-lg font-bold text-[#152536]">
+                        <h3 className="mt-6 font-heading text-lg font-bold text-foreground">
                           {link.name}
                         </h3>
-                        <p className="mt-2 break-words text-sm font-semibold text-[#64748B]">
+                        <p className="mt-2 break-words text-sm font-semibold text-foreground-muted">
                           {link.handle}
                         </p>
                       </a>
@@ -567,38 +951,71 @@ export default function SwayamProfile() {
         </div>
       </main>
 
-      <footer className="mt-10 border-t border-[#E2E8F0] bg-white">
-        <div className="mx-auto grid max-w-7xl gap-8 px-5 py-10 sm:px-6 md:grid-cols-[1fr_1fr_1fr] lg:px-8">
+      <footer className="mt-10 border-t border-border bg-surface-deep text-foreground-inverse">
+        <div
+          aria-hidden="true"
+          className="h-1 w-full rule-gradient"
+        />
+        <div className="mx-auto grid max-w-7xl gap-10 px-4 py-12 sm:px-6 md:grid-cols-3 lg:px-8">
           <div>
-            <p className="font-heading text-lg font-extrabold text-[#152536]">
-              SWAYAM SHARMA
+            <div className="flex items-center gap-3">
+              <span
+                aria-hidden="true"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-foreground-inverse/10 font-heading text-sm font-extrabold leading-none text-foreground-inverse ring-1 ring-foreground-inverse/20"
+              >
+                SS
+              </span>
+              <p className="font-heading text-lg font-extrabold text-foreground-inverse">
+                SWAYAM SHARMA
+              </p>
+            </div>
+            <p className="mt-4 text-sm leading-6 text-foreground-inverse/70">
+              Youth Leader, Social Worker, Public Speaker.
             </p>
-            <p className="mt-2 text-sm text-[#64748B]">Public profile and biography.</p>
+            <p className="mt-4 text-sm text-foreground-inverse/60">
+              Based in Indore, Madhya Pradesh, India
+            </p>
           </div>
-          <nav className="grid gap-2 text-sm font-semibold text-[#64748B]" aria-label="Footer navigation">
+          <nav className="grid gap-1 text-sm font-semibold text-foreground-inverse/70" aria-label="Footer navigation">
+            <p className="mb-2 text-[0.68rem] font-extrabold uppercase tracking-[0.2em] text-foreground-inverse/50">
+              Explore
+            </p>
             {[
               ["Overview", "overview"],
               ["Biography", "early-life"],
               ["Education", "education"],
               ["Career", "career"],
+              ["Events", "events"],
+              ["Gallery", "gallery"],
+              ["Contact", "contact"],
               ["Vision", "vision"],
               ["Social Media", "social-media"],
             ].map(([label, id]) => (
-              <button key={id} type="button" onClick={() => scrollToId(id, reduceMotion)} className="text-left transition hover:text-[#D97706] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D97706]">
+              <button
+                key={id}
+                type="button"
+                onClick={() => scrollToId(id, reduceMotion)}
+                className="min-h-11 rounded-lg px-2 text-left transition hover:text-foreground-inverse focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              >
                 {label}
               </button>
             ))}
           </nav>
-          <div className="flex flex-wrap content-start gap-2">
-            {socialLinks.map((link) => (
-              <a key={link.name} href={link.href} target="_blank" rel="noopener noreferrer" className="rounded-full border border-[#E2E8F0] px-3 py-2 text-sm font-bold text-[#152536] transition hover:border-[#D97706] hover:text-[#D97706] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D97706]">
-                {link.name}
-              </a>
-            ))}
+          <div className="flex flex-col content-start gap-3">
+            <p className="text-[0.68rem] font-extrabold uppercase tracking-[0.2em] text-foreground-inverse/50">
+              Follow
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {socialLinks.map((link) => (
+                <a key={link.name} href={link.href} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center gap-2 rounded-full border border-foreground-inverse/20 px-3.5 py-2 text-sm font-bold text-foreground-inverse transition hover:border-accent hover:bg-accent/15 hover:text-foreground-inverse focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">
+                  {link.name}
+                </a>
+              ))}
+            </div>
           </div>
         </div>
-        <div className="border-t border-[#E2E8F0] px-5 py-5 text-center text-sm text-[#64748B]">
-          Profile information is presented for informational purposes.
+        <div className="border-t border-foreground-inverse/10 px-4 py-5 text-center text-sm text-foreground-inverse/60">
+          Public profile and biography of Swayam Sharma.
         </div>
       </footer>
 
@@ -606,7 +1023,7 @@ export default function SwayamProfile() {
         type="button"
         onClick={() => scrollToId("top", reduceMotion)}
         aria-label="Back to top"
-        className={`fixed bottom-5 right-5 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-[#152536] text-white shadow-lg transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D97706] ${
+        className={`fixed bottom-5 right-5 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-foreground text-white shadow-lift transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
           showTop ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-4 opacity-0"
         }`}
       >
@@ -624,24 +1041,31 @@ function TocList({
   reduceMotion?: boolean;
 }) {
   return (
-    <nav className="mt-2 grid gap-1" aria-label="Table of contents">
-      {tocItems.map((item) => (
-        <button
-          key={item.id}
-          type="button"
-          onClick={() => scrollToId(item.id, Boolean(reduceMotion))}
-          className={`relative rounded-xl px-3 py-2.5 text-left text-sm font-bold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D97706] ${
-            activeId === item.id
-              ? "bg-[#D97706]/10 text-[#9A4D03]"
-              : "text-[#64748B] hover:bg-[#F7F8FA] hover:text-[#152536]"
-          }`}
-        >
-          {activeId === item.id ? (
-            <span className="absolute left-0 top-2.5 h-5 w-1 rounded-full bg-[#D97706]" />
-          ) : null}
-          <span className="pl-2">{item.label}</span>
-        </button>
-      ))}
+    <nav className="mt-2 grid gap-0.5" aria-label="Table of contents">
+      {tocItems.map((item) => {
+        const isActive = activeId === item.id;
+        return (
+          <button
+            key={item.id}
+            type="button"
+            onClick={() => scrollToId(item.id, Boolean(reduceMotion))}
+            aria-current={isActive ? "true" : undefined}
+            className={`relative flex min-h-11 items-center rounded-xl py-2 pl-3 pr-2 text-left text-sm font-bold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
+              isActive
+                ? "bg-accent/10 text-accent-ink"
+                : "text-foreground-muted hover:bg-background hover:text-foreground"
+            }`}
+          >
+            {isActive ? (
+              <span
+                aria-hidden="true"
+                className="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-full bg-accent"
+              />
+            ) : null}
+            <span className="pl-2">{item.label}</span>
+          </button>
+        );
+      })}
     </nav>
   );
 }
@@ -657,18 +1081,18 @@ function PortraitCard({
     <div className={`relative mx-auto ${compact ? "max-w-[300px] sm:max-w-[360px]" : ""}`}>
       <motion.div
         aria-hidden="true"
-        className="absolute -inset-4 rounded-[28px] bg-[linear-gradient(135deg,#16835B,#D97706)] opacity-20 blur-2xl"
+        className="portrait-glow absolute -inset-4 rounded-[28px] opacity-20 blur-2xl"
         animate={reduceMotion ? undefined : { opacity: [0.16, 0.28, 0.16] }}
         transition={{ duration: 4, repeat: Infinity }}
       />
       <motion.div
-        className={`relative overflow-hidden border border-white bg-white shadow-2xl shadow-slate-900/18 ${
+        className={`relative overflow-hidden border border-border bg-surface shadow-lift ${
           compact ? "rounded-[22px] p-1.5" : "rounded-[26px] p-2"
         }`}
         whileHover={reduceMotion ? undefined : { y: -6, rotate: -0.35 }}
         transition={{ duration: 0.28 }}
       >
-        <div className={`relative aspect-[4/5] overflow-hidden bg-[#E2E8F0] ${compact ? "rounded-[17px]" : "rounded-[20px]"}`}>
+        <div className={`relative aspect-[4/5] overflow-hidden bg-surface-soft ${compact ? "rounded-[17px]" : "rounded-[20px]"}`}>
           <Image
             src="/images/swayam-sharma.jpg"
             alt="Portrait of Swayam Sharma"
@@ -677,7 +1101,7 @@ function PortraitCard({
             sizes={compact ? "(max-width: 1024px) 82vw" : "(max-width: 1024px) 92vw, 42vw"}
             className="object-cover object-[center_34%] transition duration-700 hover:scale-[1.035]"
           />
-          <div className="absolute inset-x-0 bottom-0 bg-[linear-gradient(180deg,transparent,rgba(21,37,54,0.72))] p-4 text-white sm:p-5">
+          <div className="portrait-scrim absolute inset-x-0 bottom-0 p-4 text-white sm:p-5">
             <p className="text-[0.64rem] font-extrabold uppercase tracking-[0.18em] text-white/75 sm:text-xs">
               Based in
             </p>
