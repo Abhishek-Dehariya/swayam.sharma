@@ -1,15 +1,39 @@
 import type { Metadata } from "next";
 import SwayamProfile from "@/components/biography/SwayamProfile";
+import {
+  siteDescription,
+  siteImageUrl,
+  siteTitle,
+  siteUrl,
+} from "@/data/swayam-sharma";
 
 export const metadata: Metadata = {
-  title: "Swayam Sharma | Public Profile",
-  description:
-    "Public profile and biography of Swayam Sharma, youth leader, social worker, and public representative based in Indore, Madhya Pradesh.",
+  title: siteTitle,
+  description: siteDescription,
+  alternates: {
+    canonical: "/",
+  },
   openGraph: {
-    title: "Swayam Sharma | Public Profile",
-    description:
-      "Public profile and biography of Swayam Sharma, youth leader, social worker, and public representative based in Indore, Madhya Pradesh.",
-    images: [{ url: "/images/swayam-sharma.jpg", width: 1000, height: 1500 }],
+    type: "website",
+    locale: "en_IN",
+    url: siteUrl,
+    siteName: "Swayam Sharma",
+    title: siteTitle,
+    description: siteDescription,
+    images: [
+      {
+        url: siteImageUrl,
+        width: 1000,
+        height: 1500,
+        alt: "Swayam Sharma — Youth Leader, Social Worker and Public Speaker",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: siteTitle,
+    description: siteDescription,
+    images: [siteImageUrl],
   },
 };
 
