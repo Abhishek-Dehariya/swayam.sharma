@@ -1,13 +1,20 @@
 import type { MetadataRoute } from "next";
-import { siteUrl } from "@/data/swayam-sharma";
+import { siteImageUrl, siteOgImageUrl, siteUrl } from "@/data/swayam-sharma";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   return [
     {
       url: siteUrl,
       lastModified: new Date(),
-      changeFrequency: "monthly",
-      priority: 1,
+      changeFrequency: "weekly",
+      priority: 1.0,
+      images: [
+        siteImageUrl,
+        siteOgImageUrl,
+        `${siteUrl}/images/05.jpeg`,
+        `${siteUrl}/images/08.jpeg`,
+        `${siteUrl}/images/02.jpeg`,
+      ],
     },
   ];
 }

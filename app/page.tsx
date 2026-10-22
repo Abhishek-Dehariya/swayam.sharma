@@ -3,6 +3,8 @@ import SwayamProfile from "@/components/biography/SwayamProfile";
 import {
   siteDescription,
   siteImageUrl,
+  siteKeywords,
+  siteOgImageUrl,
   siteTitle,
   siteUrl,
 } from "@/data/swayam-sharma";
@@ -10,11 +12,12 @@ import {
 export const metadata: Metadata = {
   title: siteTitle,
   description: siteDescription,
+  keywords: siteKeywords,
   alternates: {
     canonical: "/",
   },
   openGraph: {
-    type: "website",
+    type: "profile",
     locale: "en_IN",
     url: siteUrl,
     siteName: "Swayam Sharma",
@@ -22,10 +25,16 @@ export const metadata: Metadata = {
     description: siteDescription,
     images: [
       {
+        url: siteOgImageUrl,
+        width: 1200,
+        height: 630,
+        alt: "Swayam Sharma — National Executive President, Rashtriya Vidyarthi Manch (RVM)",
+      },
+      {
         url: siteImageUrl,
-        width: 1000,
-        height: 1500,
-        alt: "Swayam Sharma — Youth Leader, Social Worker and Public Speaker",
+        width: 1079,
+        height: 1280,
+        alt: "Swayam Sharma Portrait — Youth Leader and Public Speaker",
       },
     ],
   },
@@ -33,7 +42,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: siteTitle,
     description: siteDescription,
-    images: [siteImageUrl],
+    images: [siteOgImageUrl],
   },
 };
 
