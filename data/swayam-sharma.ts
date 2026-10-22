@@ -36,13 +36,15 @@ export type GalleryItem = {
   category: string;
   image?: string;
   alt: string;
+  date?: string;
+  objectPosition?: string;
 };
 
 /** Production domain used for canonical URLs and social sharing metadata. */
 export const siteUrl = "https://swayam-sharma.vercel.app";
 
 /** Absolute production URL of the shared social image. */
-export const siteImageUrl = `${siteUrl}/images/swayam-sharma.jpg`;
+export const siteImageUrl = `${siteUrl}/images/01.jpeg`;
 
 export const siteTitle =
   "Swayam Sharma | Youth Leader, Social Worker & Public Speaker";
@@ -162,46 +164,34 @@ export const galleryCategories = [
 
 export const galleryItems: GalleryItem[] = [
   {
-    id: "visakhapatnam-sabha-1",
-    title: "Akhil Bhartiya Pratinidhi Sabha, Visakhapatnam",
-    caption: "Akhil Bhartiya Pratinidhi Sabha, Visakhapatnam",
+    id: "visakhapatnam-sabha",
+    title: "Akhil Bhartiya Pratinidhi Sabha",
+    caption: "Panel Speaker Address at Visakhapatnam National Meet",
     category: "Visakhapatnam — Akhil Bhartiya Pratinidhi Sabha",
+    image: "/images/05.jpeg",
+    objectPosition: "object-[center_28%]",
+    date: "8–9 August 2026",
     alt: "Swayam Sharma speaking on the panel at the Akhil Bhartiya Pratinidhi Sabha in Visakhapatnam",
   },
   {
-    id: "visakhapatnam-sabha-2",
-    title: "Akhil Bhartiya Pratinidhi Sabha, Visakhapatnam",
-    caption: "Akhil Bhartiya Pratinidhi Sabha, Visakhapatnam",
-    category: "Visakhapatnam — Akhil Bhartiya Pratinidhi Sabha",
-    alt: "Swayam Sharma at the Akhil Bhartiya Pratinidhi Sabha in Visakhapatnam",
-  },
-  {
-    id: "dussehra-mahotsav-1",
+    id: "dussehra-mahotsav",
     title: "Dussehra Mahotsav",
-    caption: "Dussehra Mahotsav",
+    caption: "Felicitation and stage address during the Dussehra Mahotsav celebrations",
     category: "Dussehra Mahotsav",
-    alt: "Swayam Sharma taking part in the Dussehra Mahotsav",
+    image: "/images/08.jpeg",
+    objectPosition: "object-[center_28%]",
+    date: "Festive Season",
+    alt: "Swayam Sharma taking part in the Dussehra Mahotsav on stage",
   },
   {
-    id: "dussehra-mahotsav-2",
-    title: "Dussehra Mahotsav",
-    caption: "Dussehra Mahotsav",
-    category: "Dussehra Mahotsav",
-    alt: "Swayam Sharma during the Dussehra Mahotsav programme",
-  },
-  {
-    id: "felicitation-1",
+    id: "felicitation-events",
     title: "Felicitation and Recognition",
-    caption: "Felicitation and Recognition",
+    caption: "Garland & Memento Ceremony by Community Dignitaries",
     category: "Felicitation events",
-    alt: "Swayam Sharma being felicitated at a public event",
-  },
-  {
-    id: "felicitation-2",
-    title: "Felicitation and Recognition",
-    caption: "Felicitation and Recognition",
-    category: "Felicitation events",
-    alt: "Swayam Sharma receiving a garland at a felicitation ceremony",
+    image: "/images/02.jpeg",
+    objectPosition: "object-[center_20%]",
+    date: "Recognition Event",
+    alt: "Swayam Sharma receiving a garland and memento at a felicitation ceremony",
   },
 ];
 

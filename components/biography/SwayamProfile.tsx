@@ -31,7 +31,13 @@ import {
   X,
 } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import Gallery from "@/components/biography/Gallery";
 import {
   aboutParagraphs,
@@ -192,8 +198,76 @@ function Section({
   );
 }
 
+const PORTRAIT_IMAGES = [
+  {
+    src: "/images/01.jpeg",
+    alt: "Portrait of Swayam Sharma",
+    position: "object-[center_28%]",
+  },
+  {
+    src: "/images/02.jpeg",
+    alt: "Portrait of Swayam Sharma",
+    position: "object-[center_24%]",
+  },
+] as const;
+
+let cachedPortraitIndex: number | null = null;
+
+function getClientPortraitIndex(): number {
+  if (typeof window === "undefined") return 0;
+  if (cachedPortraitIndex !== null) return cachedPortraitIndex;
+  try {
+    const stored =
+      sessionStorage.getItem("swayam_portrait_idx") ??
+      localStorage.getItem("swayam_portrait_idx");
+    const nextIndex = stored === "0" ? 1 : 0;
+    sessionStorage.setItem("swayam_portrait_idx", String(nextIndex));
+    localStorage.setItem("swayam_portrait_idx", String(nextIndex));
+    cachedPortraitIndex = nextIndex;
+    return nextIndex;
+  } catch {
+    cachedPortraitIndex = 0;
+    return 0;
+  }
+}
+
+const portraitStore = {
+  listeners: new Set<() => void>(),
+  getSnapshot(): number {
+    return getClientPortraitIndex();
+  },
+  getServerSnapshot(): number {
+    return 0;
+  },
+  subscribe(listener: () => void) {
+    portraitStore.listeners.add(listener);
+    return () => {
+      portraitStore.listeners.delete(listener);
+    };
+  },
+  toggle() {
+    const current = getClientPortraitIndex();
+    const next = current === 0 ? 1 : 0;
+    cachedPortraitIndex = next;
+    try {
+      sessionStorage.setItem("swayam_portrait_idx", String(next));
+      localStorage.setItem("swayam_portrait_idx", String(next));
+    } catch {}
+    portraitStore.listeners.forEach((listener) => listener());
+  },
+};
+
 export default function SwayamProfile() {
   const reduceMotion = Boolean(useReducedMotion());
+  const portraitIndex = useSyncExternalStore(
+    portraitStore.subscribe,
+    portraitStore.getSnapshot,
+    portraitStore.getServerSnapshot
+  );
+
+  const togglePortrait = () => {
+    portraitStore.toggle();
+  };
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeId, setActiveId] = useState("overview");
   const [showTop, setShowTop] = useState(false);
@@ -457,7 +531,12 @@ export default function SwayamProfile() {
                 Youth Leader. Social Worker. Public Speaker.
               </motion.p>
               <motion.div variants={heroChild} className="mt-7 lg:hidden">
-                <PortraitCard reduceMotion={reduceMotion} compact />
+                <PortraitCard
+                  reduceMotion={reduceMotion}
+                  compact
+                  portraitIndex={portraitIndex}
+                  onToggle={togglePortrait}
+                />
               </motion.div>
               <motion.p variants={heroChild} className="mt-6 max-w-2xl text-base leading-8 text-foreground-muted sm:text-lg">
                 Swayam Sharma is an Indian youth leader, social worker and public speaker based in Indore, Madhya Pradesh. He serves as National Executive President (Rashtriya Karyakari Adhyaksh) of Rashtriya Vidyarthi Manch (RVM), which functions under Mission New India, and as Organisation Coordinator in Mission New India.
@@ -497,7 +576,11 @@ export default function SwayamProfile() {
               transition={{ duration: reduceMotion ? 0 : 0.75 }}
               className="mx-auto hidden w-full max-w-[430px] sm:max-w-[500px] lg:mr-0 lg:block lg:max-w-[520px]"
             >
-              <PortraitCard reduceMotion={reduceMotion} />
+              <PortraitCard
+                reduceMotion={reduceMotion}
+                portraitIndex={portraitIndex}
+                onToggle={togglePortrait}
+              />
             </motion.div>
           </div>
         </section>
@@ -1073,9 +1156,13 @@ function TocList({
 function PortraitCard({
   reduceMotion,
   compact = false,
+  portraitIndex = 0,
+  onToggle,
 }: {
   reduceMotion: boolean;
   compact?: boolean;
+  portraitIndex?: number;
+  onToggle?: () => void;
 }) {
   return (
     <div className={`relative mx-auto ${compact ? "max-w-[300px] sm:max-w-[360px]" : ""}`}>
@@ -1092,16 +1179,41 @@ function PortraitCard({
         whileHover={reduceMotion ? undefined : { y: -6, rotate: -0.35 }}
         transition={{ duration: 0.28 }}
       >
-        <div className={`relative aspect-[4/5] overflow-hidden bg-surface-soft ${compact ? "rounded-[17px]" : "rounded-[20px]"}`}>
-          <Image
-            src="/images/swayam-sharma.jpg"
-            alt="Portrait of Swayam Sharma"
-            fill
-            priority
-            sizes={compact ? "(max-width: 1024px) 82vw" : "(max-width: 1024px) 92vw, 42vw"}
-            className="object-cover object-[center_34%] transition duration-700 hover:scale-[1.035]"
-          />
-          <div className="portrait-scrim absolute inset-x-0 bottom-0 p-4 text-white sm:p-5">
+        <div
+          onClick={onToggle}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              onToggle?.();
+            }
+          }}
+          title="Click to switch portrait photo"
+          className={`group/portrait relative aspect-[4/5] overflow-hidden bg-surface-soft cursor-pointer select-none ${
+            compact ? "rounded-[17px]" : "rounded-[20px]"
+          }`}
+        >
+          {PORTRAIT_IMAGES.map((img, idx) => (
+            <Image
+              key={img.src}
+              src={img.src}
+              alt={img.alt}
+              fill
+              priority
+              sizes={compact ? "(max-width: 1024px) 82vw" : "(max-width: 1024px) 92vw, 42vw"}
+              className={`object-cover ${img.position} transition-all duration-700 group-hover/portrait:scale-[1.035] ${
+                portraitIndex === idx
+                  ? "opacity-100 z-10 scale-100 pointer-events-auto"
+                  : "opacity-0 z-0 pointer-events-none scale-105"
+              }`}
+            />
+          ))}
+          <div className="absolute top-3 right-3 z-20 flex items-center gap-1.5 rounded-full bg-black/45 px-2.5 py-1 text-[11px] font-medium text-white/90 backdrop-blur-md border border-white/15 transition group-hover/portrait:bg-black/65">
+            <Camera className="h-3 w-3 text-white/80" />
+            <span>{portraitIndex === 0 ? "Photo 1" : "Photo 2"}</span>
+          </div>
+          <div className="portrait-scrim absolute inset-x-0 bottom-0 z-20 p-4 text-white sm:p-5 pointer-events-none">
             <p className="text-[0.64rem] font-extrabold uppercase tracking-[0.18em] text-white/75 sm:text-xs">
               Based in
             </p>
